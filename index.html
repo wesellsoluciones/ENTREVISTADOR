@@ -475,6 +475,11 @@ document.getElementById('startBtn').addEventListener('click', async ()=>{
   state.competencies = Array.from(document.querySelectorAll('.chip.active')).map(c=>c.dataset.c);
   if(state.competencies.length===0) state.competencies=['Comunicación'];
 
+  // Cerramos el medidor de nivel de mic (si quedó abierto) ANTES de arrancar:
+  // dos procesos usando el micrófono al mismo tiempo puede hacer que el
+  // reconocimiento de voz se quede sin señal aunque diga "conectado".
+  await stopMicTest();
+
   document.getElementById('setup').style.display='none';
   document.getElementById('room').classList.add('show');
 
