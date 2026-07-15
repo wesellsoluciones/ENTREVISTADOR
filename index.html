@@ -233,7 +233,7 @@
 
   <!-- SETUP -->
   <div id="setup">
-    <p class="eyebrow">ECOA · demo de producto</p>
+    <p class="eyebrow" id="secretLogo" style="cursor:default;user-select:none;">ECOA · demo de producto</p>
     <h1>Entrevistá candidatos por<br>voz, con IA.</h1>
     <p class="sub">Configurá una entrevista de prueba como la vería tu equipo de RRHH. La IA habla, escucha, repregunta, y al final te entrega una evaluación lista para revisar.</p>
 
@@ -272,6 +272,30 @@
         <div id="micLevelBar" style="height:100%;width:0%;background:linear-gradient(90deg, var(--accent), var(--listening));transition:width .08s linear;"></div>
       </div>
       <p class="note" id="micLevelNote" style="margin-top:0;margin-bottom:24px;">Esta barra se mueve con tu voz, aparte del reconocimiento — sirve para confirmar que Chrome está agarrando el micrófono correcto.</p>
+
+      <button type="button" id="advToggle" style="display:none;"></button>
+
+      <div id="advPanel" style="display:none;border:1px solid var(--ink-line);border-radius:12px;padding:16px 18px;margin-bottom:24px;">
+        <label for="maxQuestionsInput">Cantidad de preguntas</label>
+        <input type="number" id="maxQuestionsInput" min="2" max="15" value="5">
+
+        <label for="empresaNombre">Nombre de la empresa</label>
+        <input type="text" id="empresaNombre" value="">
+
+        <label for="empresaRubro">Rubro de la empresa</label>
+        <input type="text" id="empresaRubro" value="">
+
+        <label for="empresaInfo">Info de la empresa para el candidato</label>
+        <textarea id="empresaInfo" rows="3" style="width:100%;background:var(--ink);border:1px solid var(--ink-line);border-radius:9px;color:var(--paper);font-family:'Inter',sans-serif;font-size:14px;padding:12px 14px;margin-bottom:20px;outline:none;box-sizing:border-box;resize:vertical;"></textarea>
+
+        <label for="webhookInput">Webhook de Activepieces (resultados)</label>
+        <input type="text" id="webhookInput" value="" placeholder="https://cloud.activepieces.com/api/v1/webhooks/...">
+        <p style="font-size:12px;color:var(--muted);margin:-14px 0 20px 0;line-height:1.5;">Dejalo vacío si todavía no armaste el flujo — la entrevista funciona igual, simplemente no manda los resultados a ningún lado.</p>
+
+        <label for="preguntasFijas">Preguntas fijas (opcional, una por línea)</label>
+        <textarea id="preguntasFijas" rows="5" placeholder="Contame tu última experiencia relevante para este puesto.&#10;¿Cómo manejás un cliente enojado?&#10;Contame una vez que tuviste que resolver un problema bajo presión." style="width:100%;background:var(--ink);border:1px solid var(--ink-line);border-radius:9px;color:var(--paper);font-family:'Inter',sans-serif;font-size:14px;padding:12px 14px;margin-bottom:8px;outline:none;box-sizing:border-box;resize:vertical;"></textarea>
+        <p style="font-size:12px;color:var(--muted);margin:0 0 0 0;line-height:1.5;">Si completás esto, el entrevistador hace estas preguntas en este orden exacto (después de la de presentación inicial) en vez de generarlas con IA. Dejalo vacío para que la IA las arme sola según las competencias elegidas.</p>
+      </div>
 
       <button class="btn-primary" id="startBtn">Iniciar entrevista de prueba</button>
       <p class="note">Vas a necesitar dar permiso de micrófono. Funciona mejor en Chrome. Si tu navegador no soporta reconocimiento de voz, aparece un campo de texto como alternativa. La lista de voces depende de tu navegador/sistema operativo — elegí la que más te guste y probala antes de arrancar.</p>
@@ -334,7 +358,7 @@ const CONFIG = {
   competenciasActivasDefault: ["Comunicación", "Manejo de objeciones", "Orientación a resultados"],
 
   // Cantidad de preguntas de la entrevista
-  maxQuestions: 5,
+  maxQuestions: 2,
 
   // URL del webhook de Activepieces al que se manda el resultado final de
   // cada entrevista (dejalo vacío "" si todavía no armaste el flujo).
@@ -367,6 +391,57 @@ CONFIG.competenciasDisponibles.forEach(c=>{
 // ---------- setup interactions ----------
 document.querySelectorAll('.chip').forEach(chip=>{
   chip.addEventListener('click', ()=> chip.classList.toggle('active'));
+});
+
+// ---------- panel de configuración avanzada ----------
+// Los valores se guardan en localStorage para que no se pierdan al recargar
+// la página, pero siguen siendo editables acá sin tocar el código.
+const ADV_STORAGE_KEY = 'ecoa_config_avanzada';
+
+function loadAdvConfig(){
+  let saved = {};
+  try{ saved = JSON.parse(localStorage.getItem(ADV_STORAGE_KEY) || '{}'); }catch(e){}
+  document.getElementById('maxQuestionsInput').value = saved.maxQuestions ?? CONFIG.maxQuestions;
+  document.getElementById('empresaNombre').value = saved.empresaNombre ?? CONFIG.empresaCliente.nombre;
+  document.getElementById('empresaRubro').value = saved.empresaRubro ?? CONFIG.empresaCliente.rubro;
+  document.getElementById('empresaInfo').value = saved.empresaInfo ?? CONFIG.empresaCliente.infoParaCandidato;
+  document.getElementById('webhookInput').value = saved.webhook ?? CONFIG.webhookActivepieces;
+  document.getElementById('preguntasFijas').value = saved.preguntasFijas ?? '';
+}
+
+function saveAdvConfig(){
+  const data = {
+    maxQuestions: parseInt(document.getElementById('maxQuestionsInput').value, 10) || 5,
+    empresaNombre: document.getElementById('empresaNombre').value.trim(),
+    empresaRubro: document.getElementById('empresaRubro').value.trim(),
+    empresaInfo: document.getElementById('empresaInfo').value.trim(),
+    webhook: document.getElementById('webhookInput').value.trim(),
+    preguntasFijas: document.getElementById('preguntasFijas').value
+  };
+  localStorage.setItem(ADV_STORAGE_KEY, JSON.stringify(data));
+  return data;
+}
+
+loadAdvConfig();
+
+document.getElementById('advToggle').addEventListener('click', ()=>{
+  const panel = document.getElementById('advPanel');
+  panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
+});
+
+// Triple click en el logo/eyebrow para revelar la configuración avanzada
+// (oculta a propósito, no es un botón visible para cualquiera).
+let secretClickCount = 0;
+let secretClickTimer = null;
+document.getElementById('secretLogo').addEventListener('click', ()=>{
+  secretClickCount++;
+  clearTimeout(secretClickTimer);
+  secretClickTimer = setTimeout(()=>{ secretClickCount = 0; }, 600);
+  if(secretClickCount >= 3){
+    secretClickCount = 0;
+    const panel = document.getElementById('advPanel');
+    panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
+  }
 });
 
 // ---------- selector de voz ----------
@@ -483,6 +558,14 @@ document.getElementById('testMicBtn').addEventListener('click', async ()=>{
 });
 
 document.getElementById('startBtn').addEventListener('click', async ()=>{
+  const adv = saveAdvConfig();
+  state.customQuestions = adv.preguntasFijas.split('\n').map(q=>q.trim()).filter(q=>q.length>0);
+  state.maxQuestions = state.customQuestions.length > 0 ? (state.customQuestions.length + 1) : adv.maxQuestions;
+  CONFIG.empresaCliente.nombre = adv.empresaNombre || CONFIG.empresaCliente.nombre;
+  CONFIG.empresaCliente.rubro = adv.empresaRubro;
+  CONFIG.empresaCliente.infoParaCandidato = adv.empresaInfo || CONFIG.empresaCliente.infoParaCandidato;
+  CONFIG.webhookActivepieces = adv.webhook;
+
   state.role = document.getElementById('role').value.trim() || 'el puesto';
   state.competencies = Array.from(document.querySelectorAll('.chip.active')).map(c=>c.dataset.c);
   if(state.competencies.length===0) state.competencies=['Comunicación'];
@@ -760,6 +843,19 @@ async function askNextQuestion(){
     return;
   }
 
+  // Preguntas fijas: si el usuario cargó una lista en el panel avanzado, se
+  // usan en ese orden exacto (después de la de presentación) en vez de
+  // pedirle a la IA que las invente.
+  const fijaIndex = state.currentIndex - 1;
+  if(state.customQuestions && state.customQuestions.length > 0 && fijaIndex < state.customQuestions.length){
+    const preguntaFija = state.customQuestions[fijaIndex];
+    state.history.push({question: preguntaFija, answer:null});
+    addToTranscript('ai', preguntaFija);
+    await speak(preguntaFija);
+    listenForAnswer();
+    return;
+  }
+
   const system = `Sos un entrevistador de selección de personal, profesional y cálido, entrevistando en español rioplatense para el puesto "${state.role}" en la empresa "${CONFIG.empresaCliente.nombre}"${CONFIG.empresaCliente.rubro ? ` (rubro: ${CONFIG.empresaCliente.rubro})` : ''}. Devolvé SIEMPRE y ÚNICAMENTE un JSON válido, sin texto adicional ni backticks ni explicaciones, con este formato exacto:
 {"pregunta": "texto de la pregunta o mensaje", "esUltima": true|false}
 
@@ -769,11 +865,11 @@ Reglas:
 - Sonar como una conversación real, no como un cuestionario: antes de la pregunta nueva, sumá una frase corta y natural que reaccione a lo que acaba de contestar el candidato (ej. un comentario breve, un "qué bueno", un matiz sobre algo que dijo) y recién después hacé la pregunta. Todo eso va junto en el mismo campo "pregunta".
 - Hacé una pregunta conversacional a la vez, nunca varias juntas.
 - Evaluá estas competencias a lo largo de la entrevista: ${state.competencies.join(', ')}.
-- Si es la segunda pregunta, pedile que te cuente su última experiencia relevante con respecto a la posición a la que se postuló o tareas que haya realizado similares a las de la descripción del puesto.
-- A partir de la tercera pregunta, segui indagando sobre las competencias a evaluar.
+- Si es la segunda pregunta Y todavía NO es la última pregunta (o sea, ${state.maxQuestions} es mayor a 2), pedile que te cuente su última experiencia relevante con respecto a la posición a la que se postuló o tareas que haya realizado similares a las de la descripción del puesto.
+- A partir de la tercera pregunta (o desde la segunda si esta entrevista tiene ${state.maxQuestions} preguntas en total y ${state.maxQuestions} es 2), segui indagando sobre las competencias a evaluar.
 - Si el historial muestra una respuesta superficial, repreguntá pidiendo un ejemplo concreto. Si no, avanzá a otra competencia.
 - Esta va a ser la pregunta número ${state.currentIndex+1} de ${state.maxQuestions} en total.
-- Si esta es la pregunta número ${state.maxQuestions}, respondé con esUltima:true y que el texto sea un cierre breve agradeciendo el tiempo y explicando que la entrevista terminó (no hagas una pregunta nueva).`;
+- IMPORTANTE: si esta es la pregunta número ${state.maxQuestions} (la última), esa regla tiene prioridad sobre cualquier otra: respondé con esUltima:true y que el texto sea un cierre breve agradeciendo el tiempo y explicando que la entrevista terminó (no hagas una pregunta nueva, ni siquiera la de experiencia).`;
 
   const historyText = state.history.length===0
     ? 'No hay historial todavía. Es el inicio de la entrevista.'
