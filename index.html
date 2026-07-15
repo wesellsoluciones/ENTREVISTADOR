@@ -85,7 +85,7 @@
     color:var(--muted);
     margin:0 0 8px;
   }
-  input[type=text]{
+  input[type=text], input[type=password]{
     width:100%;
     background:var(--ink);
     border:1px solid var(--ink-line);
@@ -97,8 +97,9 @@
     margin-bottom:24px;
     outline:none;
     transition:border-color .15s, box-shadow .15s;
+    box-sizing:border-box;
   }
-  input[type=text]:focus{border-color:var(--listening);box-shadow:0 0 0 3px rgba(51,230,201,0.12);}
+  input[type=text]:focus, input[type=password]:focus{border-color:var(--listening);box-shadow:0 0 0 3px rgba(51,230,201,0.12);}
   .chips{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:28px;}
   .chip{
     font-family:'IBM Plex Mono',monospace;
@@ -243,7 +244,7 @@
     <div class="card">
       <label for="apiKey">API Key de Anthropic</label>
       <input type="password" id="apiKey" value="" placeholder="sk-ant-...">
-      <p style="font-size:12px;color:var(--muted);margin:-14px 0 20px 0;line-height:1.5;">
+      <p style="font-size:12px;color:var(--muted);margin:0 0 20px 0;line-height:1.5;">
         Sacala de <a href="https://console.anthropic.com" target="_blank" style="color:var(--listening);">console.anthropic.com</a> → API Keys.
         Se usa solo en tu navegador, para llamar a la IA que hace las preguntas y la evaluación.
       </p>
