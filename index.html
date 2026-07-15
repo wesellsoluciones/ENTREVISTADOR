@@ -792,7 +792,12 @@ async function finishInterview(){
  "fortalezas": ["...", "..."],
  "puntosAConsiderar": ["...", "..."]
 }
-El puntaje va de 1 a 5. Incluí una entrada en "competencias" por cada competencia evaluada.`;
+El puntaje va de 1 a 5. Incluí una entrada en "competencias" por cada competencia evaluada.
+
+Reglas importantes para la evaluación:
+- Basate ÚNICAMENTE en lo que el candidato dijo textualmente en la transcripción. No asumas ni infieras competencias, datos o hechos que no se mencionaron o ejemplificaron explícitamente.
+- Si no hay evidencia suficiente en la transcripción sobre alguna competencia, decilo explícitamente en la "nota" de esa competencia (ej. "No se pudo evaluar con la información disponible") y asigná un puntaje bajo o neutro en vez de inventar una valoración positiva o negativa.
+- No completes con suposiciones genéricas de "buen candidato típico"; cada afirmación en "resumen", "fortalezas" y "puntosAConsiderar" tiene que poder rastrearse a algo concreto que el candidato haya dicho.`;
 
   const historyText = state.history.filter(h=>h.answer).map((h,i)=>`P${i+1}: ${h.question}\nR${i+1}: ${h.answer}`).join('\n\n');
 
