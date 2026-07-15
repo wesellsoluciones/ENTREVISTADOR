@@ -628,7 +628,6 @@ function listenForAnswer(){
       if(event.results[i].isFinal) finalTranscript += event.results[i][0].transcript + ' ';
       else interim += event.results[i][0].transcript;
     }
-    document.getElementById('aiLine').textContent = (finalTranscript+interim) || '…';
     micNote.style.display='none';
     clearTimeout(silenceTimer);
     silenceTimer = setTimeout(()=>{
@@ -694,7 +693,6 @@ document.getElementById('fallbackInput').addEventListener('keydown', e=>{
 
 function handleAnswer(answer){
   if(!answer) answer='(sin respuesta clara)';
-  addToTranscript('you', answer);
   state.history[state.history.length-1].answer = answer;
   state.currentIndex++;
   if(state.currentIndex >= state.maxQuestions){
@@ -743,9 +741,10 @@ async function askNextQuestion(){
 Información de la empresa que podés usar SOLO si hace falta en la pregunta 2 (si el candidato no la conoce o pide que le cuenten): "${CONFIG.empresaCliente.infoParaCandidato}"
 
 Reglas:
+- Sonar como una conversación real, no como un cuestionario: antes de la pregunta nueva, sumá una frase corta y natural que reaccione a lo que acaba de contestar el candidato (ej. un comentario breve, un "qué bueno", un matiz sobre algo que dijo) y recién después hacé la pregunta. Todo eso va junto en el mismo campo "pregunta".
 - Hacé una pregunta conversacional a la vez, nunca varias juntas.
 - Evaluá estas competencias a lo largo de la entrevista: ${state.competencies.join(', ')}.
-- Si es la segunda pregunta, dirigila a saber si el candidato conoce a la empresa: pedile que cuente qué sabe de nosotros, o si necesita que le cuenten un poco primero. Si el candidato pide que le cuenten, usá la información de la empresa de arriba para responderle brevemente y después retomar la entrevista.
+- Si es la segunda pregunta, pedile que te cuente su última experiencia relevante con respecto a la posición a la que se postuló o tareas que haya realizado similares a las de la descripción del puesto.
 - A partir de la tercera pregunta, segui indagando sobre las competencias a evaluar.
 - Si el historial muestra una respuesta superficial, repreguntá pidiendo un ejemplo concreto. Si no, avanzá a otra competencia.
 - Esta va a ser la pregunta número ${state.currentIndex+1} de ${state.maxQuestions} en total.
@@ -759,7 +758,7 @@ Reglas:
   try{
     result = await callClaude(system, historyText);
   }catch(e){
-    result = {pregunta:"Contame un poco sobre tu experiencia relevante para este puesto.", esUltima:false};
+    result = {pregunta:"Contame tu última experiencia relevante con respecto a la posición a la que te postulaste, o tareas que hayas realizado similares a las de la descripción del puesto.", esUltima:false};
   }
 
   state.history.push({question: result.pregunta, answer:null});
