@@ -328,6 +328,10 @@ const CONFIG = {
   // Cantidad de preguntas de la entrevista
   maxQuestions: 5,
 
+  // URL del webhook de Activepieces al que se manda el resultado final de
+  // cada entrevista (dejalo vacío "" si todavía no armaste el flujo).
+  webhookActivepieces: "https://cloud.activepieces.com/api/v1/webhooks/K8NjfyT2XyuI9katwhNp7",
+
   // Preferencias de voz (ver función speak())
   voz: { idioma: "es-419", preferirFemenina: true }
 };
@@ -799,6 +803,35 @@ El puntaje va de 1 a 5. Incluí una entrada en "competencias" por cada competenc
     evalResult = {recomendacion:"Avanzar con reservas", resumen:"No se pudo generar la evaluación automática en este demo.", competencias:[], fortalezas:[], puntosAConsiderar:[]};
   }
   renderDashboard(evalResult);
+  sendResultadosAActivepieces(evalResult);
+}
+
+// ---------- envío del resultado a Activepieces ----------
+async function sendResultadosAActivepieces(evalResult){
+  if(!CONFIG.webhookActivepieces){
+    console.warn('CONFIG.webhookActivepieces está vacío: no se mandó el resultado a ningún lado.');
+    return;
+  }
+  const payload = {
+    puesto: state.role,
+    empresa: CONFIG.empresaCliente.nombre,
+    fecha: new Date().toISOString(),
+    recomendacion: evalResult.recomendacion,
+    resumen: evalResult.resumen,
+    competencias: evalResult.competencias || [],
+    fortalezas: evalResult.fortalezas || [],
+    puntosAConsiderar: evalResult.puntosAConsiderar || [],
+    transcripcion: state.history.filter(h=>h.answer).map((h,i)=>({pregunta:h.question, respuesta:h.answer}))
+  };
+  try{
+    await fetch(CONFIG.webhookActivepieces, {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify(payload)
+    });
+  }catch(e){
+    console.warn('No se pudo enviar el resultado a Activepieces:', e);
+  }
 }
 
 function renderDashboard(ev){
